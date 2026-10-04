@@ -1,5 +1,7 @@
 import model.Note
 import service.NoteService
+import utils.readNextInt
+
 fun main() {
     runMenu()
 }
@@ -7,22 +9,22 @@ fun main() {
 
 val noteService = NoteService()
 fun mainMenu(): Int {
-    print("""
-        >----------------------------------------
-        > |            NOTE KEEPER APP          |
-        >----------------------------------------
-        > | NOTE MENU                           |
-        > | 1) Add a note                       |
-        > | 2) List all notes                   |
-        > | 3) Update a note                    |
-        > | 4) Delete a note                    |
-        >----------------------------------------
-        > | 0) Exit                             |
-        >----------------------------------------
-        > ==>> """.trimMargin(">"))
-    return readlnOrNull()?.toIntOrNull() ?: -1
-
+    print(""" 
+         > ----------------------------------
+         > |        NOTE KEEPER APP         |
+         > ----------------------------------
+         > | NOTE MENU                      |
+         > |   1) Add a note                |
+         > |   2) List all notes            |
+         > |   3) Update a note             |
+         > |   4) Delete a note             |
+         > ----------------------------------
+         > |   0) Exit                      |
+         > ----------------------------------
+         > """.trimMargin(">"))
+    return readNextInt("==>> ")
 }
+
 fun runMenu() {
     var input: Int
     do {
@@ -103,4 +105,6 @@ fun updateNote() {
     } else {
         println("Not found")
     }
+
+
 }
