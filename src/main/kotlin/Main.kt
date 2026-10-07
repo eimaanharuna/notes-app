@@ -30,8 +30,6 @@ fun mainMenu(): Int {
 }
 
 fun runMenu() {
-    logger.info { "Notes App Exiting" }
-
     var input: Int
     do {
         input = mainMenu()
@@ -40,12 +38,12 @@ fun runMenu() {
             2 -> listNotes()
             3 -> updateNote()
             4 -> deleteNote()
-            -1 -> println("Exiting App")
+            0 -> println("Exiting App")
 
             else -> println("Invalid Option")
 
         }
-    } while (input != -1)
+    } while (input != 0)
 }
 
 fun addNote(){
@@ -55,8 +53,7 @@ fun addNote(){
     print("Body: ")
     val body = readlnOrNull() ?: ""
 
-    print("Priority (1-5): ")
-    val priority = readlnOrNull()?.toIntOrNull() ?: 1
+    val priority = readNextInt("Priority (1-5): ")
 
     print("Category: ")
     val category = readlnOrNull() ?: ""
@@ -99,12 +96,15 @@ fun updateNote() {
     print("Category: ")
     val category = readlnOrNull() ?: ""
 
-    print("Is archived (y/n): ")
-    val isArchived = when (readlnOrNull()?.lowercase()) {
-        "y", "yes", "true" -> true
-        else -> false
+    fun readNextBoolean(prompt: String = ""): Boolean {
+        print(prompt)
+        return when (readlnOrNull()?.lowercase()) {
+            "y", "yes", "true" -> true
+            else -> false
+        }
     }
 
+    val isArchived = false
     val updated = Note(id, title, body, priority, category, isArchived)
 
     if (noteService.updateNote(id, updated)) {
