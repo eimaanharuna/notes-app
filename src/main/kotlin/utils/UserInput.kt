@@ -22,7 +22,7 @@ fun readNextDouble(prompt: String = ""): Double {
             return value
         }
 
-        println("Please enter a valid Double.")
+        println("Please enter a valid double.")
     }
 }
 
@@ -35,7 +35,7 @@ fun readNextFloat(prompt: String = ""): Float {
             return value
         }
 
-        println("Please enter a valid Float.")
+        println("Please enter a valid float.")
     }
 }
 
@@ -54,5 +54,13 @@ fun readNextChar(prompt: String = ""): Char {
         }
 
         println("Please enter exactly one character.")
+    }
+}
+
+fun readNextBoolean(prompt: String = ""): Boolean {
+    print(prompt)
+    return when (readlnOrNull()?.lowercase()) {
+        "y", "yes", "true" -> true
+        else -> false
     }
 }

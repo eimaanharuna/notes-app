@@ -1,17 +1,18 @@
+import io.github.oshai.kotlinlogging.KotlinLogging
 import model.Note
 import service.NoteService
+import utils.readNextBoolean
 import utils.readNextInt
-import io.github.oshai.kotlinlogging.KotlinLogging
+import utils.readNextLine
 
+val noteService = NoteService()
 private val logger = KotlinLogging.logger {}
 
-fun main() {
-logger.info { "Notes App Started" }
+fun main(){
+    logger.info { "Notes App Starting" }
     runMenu()
 }
 
-
-val noteService = NoteService()
 fun mainMenu(): Int {
     print(""" 
          > ----------------------------------
@@ -29,34 +30,26 @@ fun mainMenu(): Int {
     return readNextInt("==>> ")
 }
 
-fun runMenu() {
-    var input: Int
+fun runMenu (){
+    var input : Int
     do {
         input = mainMenu()
-        when (input) {
+        when(input) {
             1 -> addNote()
             2 -> listNotes()
             3 -> updateNote()
             4 -> deleteNote()
-            0 -> println("Exiting App")
-
+            0 -> logger.info { "Notes App Exiting" }
             else -> println("Invalid Option")
-
         }
     } while (input != 0)
 }
 
 fun addNote(){
-    print("Title: ")
-    val title = readlnOrNull() ?: ""
-
-    print("Body: ")
-    val body = readlnOrNull() ?: ""
-
+    val title = readNextLine("Title: ")
+    val body = readNextLine("Body: ")
     val priority = readNextInt("Priority (1-5): ")
-
-    print("Category: ")
-    val category = readlnOrNull() ?: ""
+    val category = readNextLine("Category: ")
 
     noteService.addNote(
         Note(0, title, body, priority, category, false)
@@ -66,45 +59,17 @@ fun addNote(){
 }
 
 fun listNotes() {
-    println(noteService.getNotes())
-}
-
-fun deleteNote() {
-    print("Enter ID to delete: ")
-    val id = readln().toInt()
-
-    if (noteService.deleteNote(id)) {
-        println("Deleted")
-    }else {
-        println("Not found")
-    }
+    noteService.getNotes().forEach { println(it) }
 }
 
 fun updateNote() {
-    print("Enter ID to update: ")
-    val id = readln().toInt()
+    val id = readNextInt("Enter ID: ")
+    val title = readNextLine("Title: ")
+    val body = readNextLine("Body: ")
+    val priority = readNextInt("Priority (1-5): ")
+    val category = readNextLine("Category: ")
+    val isArchived = readNextBoolean("Archive the note (y/n): ")
 
-    print("Title: ")
-    val title = readlnOrNull() ?: ""
-
-    print("Body: ")
-    val body = readlnOrNull() ?: ""
-
-    print("Priority (1-5): ")
-    val priority = readlnOrNull()?.toIntOrNull() ?: 1
-
-    print("Category: ")
-    val category = readlnOrNull() ?: ""
-
-    fun readNextBoolean(prompt: String = ""): Boolean {
-        print(prompt)
-        return when (readlnOrNull()?.lowercase()) {
-            "y", "yes", "true" -> true
-            else -> false
-        }
-    }
-
-    val isArchived = false
     val updated = Note(id, title, body, priority, category, isArchived)
 
     if (noteService.updateNote(id, updated)) {
@@ -112,6 +77,16 @@ fun updateNote() {
     } else {
         println("Not found")
     }
-
-
 }
+
+fun deleteNote() {
+    val id = readNextInt("Enter ID: ")
+
+    if (noteService.deleteNote(id)) {
+        println("Deleted")
+    } else {
+        println("Not found")
+    }
+}
+
+

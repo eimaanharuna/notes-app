@@ -3,6 +3,7 @@ package service
 import model.Note
 
 class NoteService {
+
     private val notes = ArrayList<Note>()
     private var lastId = 0
     private fun getId(): Int = lastId++
@@ -11,12 +12,13 @@ class NoteService {
         note.id = getId()
         notes.add(note)
     }
+
     fun getNotes(): List<Note> {
         return notes
     }
 
     fun deleteNote(id: Int): Boolean {
-        return notes.removeIf { it.id == id}
+        return notes.removeIf { it.id == id }
     }
 
     fun updateNote(id: Int, updated: Note): Boolean {
@@ -27,4 +29,5 @@ class NoteService {
         }
         return false
     }
+
 }
