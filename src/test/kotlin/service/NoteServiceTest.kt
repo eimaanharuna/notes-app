@@ -74,19 +74,19 @@ class NoteServiceTest {
             emptyNoteService.addNote(note1)
             emptyNoteService.addNote(note2)
 
-            val retrievedNote1 = emptyNoteService.getNotes()[0]
-            val retrievedNote2 = emptyNoteService.getNotes()[1]
+            val retrievedNote1 = emptyNoteService.findNoteById(0)
+            val retrievedNote2 = emptyNoteService.findNoteById(0)
 
-            assertEquals(false, retrievedNote1.isArchived)
-            assertEquals(false, retrievedNote2.isArchived)
+            assertEquals(false, retrievedNote1?.isArchived)
+            assertEquals(false, retrievedNote2?.isArchived)
         }
 
         @Test
         fun `ensure ids remain unique after multiple inserts`() {
-            assertEquals(0, populatedNoteService.getNotes()[0].id)
-            assertEquals(1, populatedNoteService.getNotes()[1].id)
-            assertEquals(2, populatedNoteService.getNotes()[2].id)
-            assertEquals(3, populatedNoteService.getNotes()[3].id)
+            assertEquals(0, populatedNoteService.findNoteById(0)?.id)
+            assertEquals(1, populatedNoteService.findNoteById(1)?.id)
+            assertEquals(2, populatedNoteService.findNoteById(2)?.id)
+            assertEquals(3, populatedNoteService.findNoteById(3)?.id)
         }
     }
 
@@ -114,7 +114,7 @@ class NoteServiceTest {
         }
 
         @Test
-        fun `deleting a non-existent note returns false`() {
+        fun `deleting a non existant note returns false`() {
             assertFalse(populatedNoteService.deleteNote(5))
         }
 
@@ -143,7 +143,6 @@ class NoteServiceTest {
             assertTrue(populatedNoteService.getNotes().any { it.id == 2 })
             assertTrue(populatedNoteService.getNotes().any { it.id == 3 })
         }
-
     }
 
     @Nested
@@ -151,25 +150,29 @@ class NoteServiceTest {
 
         @Test
         fun `updating an existing note returns true`() {
-            val updated = Note(1, "Updated Title", "Updated Body", 5, "Work", true)
+            val updated = Note(1, "Updated Title", "Updated Body",
+                5, "Work", true)
             assertTrue(populatedNoteService.updateNote(1, updated))
         }
 
         @Test
         fun `updating a non existing note returns false`() {
-            val updated = Note(999, "Updated Title", "Updated Body", 5, "Work", false)
+            val updated = Note(999, "Updated Title", "Updated Body",
+                5, "Work", false)
             assertFalse(populatedNoteService.updateNote(999, updated))
         }
 
         @Test
         fun `updating in an empty service returns false`() {
-            val updated = Note(1, "Updated Title", "Updated Body", 5, "Work", false)
+            val updated = Note(1, "Updated Title", "Updated Body",
+                5, "Work", false)
             assertFalse(emptyNoteService.updateNote(1, updated))
         }
 
         @Test
         fun `updating a note changes its stored values`() {
-            val updated = Note(1, "Updated Title", "Updated Body", 5, "Personal", true)
+            val updated = Note(1, "Updated Title", "Updated Body",
+                5, "Personal", true)
 
             populatedNoteService.updateNote(1, updated)
 
@@ -186,7 +189,8 @@ class NoteServiceTest {
         fun `updating a note does not change the number of notes`() {
             val sizeBefore = populatedNoteService.getNotes().size
 
-            val updated = Note(1, "Updated Title", "Updated Body", 5, "Personal", true)
+            val updated = Note(1, "Updated Title", "Updated Body",
+                5, "Personal", true)
             populatedNoteService.updateNote(1, updated)
 
             assertEquals(sizeBefore, populatedNoteService.getNotes().size)
@@ -194,14 +198,86 @@ class NoteServiceTest {
 
         @Test
         fun `updating an existing note preserves its id`() {
-            val updated = Note(99, "Updated Title", "Updated Body", 5, "Work", false)
+            val updated = Note(99, "Updated Title", "Updated Body",
+                5, "Work", false)
 
             populatedNoteService.updateNote(1, updated)
-
-            assertEquals(1, populatedNoteService.getNotes()[1].id)
+            assertEquals(1, populatedNoteService.findNoteById(1)?.id)
         }
 
     }
 
+    @Nested
+    inner class CountingNotes{
 
+        @Test
+        fun `numberOfNotes returns correct total count for populated service`() {
+            assertEquals(4, populatedNoteService.numberOfNotes())
+        }
+
+        @Test
+        fun `numberOfNotes returns zero for empty service`() {
+            assertEquals(0, emptyNoteService.numberOfNotes())
+        }
+
+        @Test
+        fun `numberOfArchivedNotes returns correct count after archiving notes`() {
+            assertTrue(populatedNoteService.archiveNote(2))
+            assertTrue(populatedNoteService.archiveNote(3))
+            assertEquals(2, populatedNoteService.numberOfArchivedNotes())
+        }
+
+        @Test
+        fun `numberOfArchivedNotes returns zero when no notes are archived`() {
+            // new notes are always set to active
+            emptyNoteService.addNote(note1)
+            emptyNoteService.addNote(note2)
+            emptyNoteService.addNote(note3)
+
+            assertEquals(0, emptyNoteService.numberOfArchivedNotes())
+        }
+
+        @Test
+        fun `numberOfActiveNotes returns correct count when all notes are still active`() {
+            // new notes are always added as active, regardless.
+            assertEquals(4, populatedNoteService.numberOfActiveNotes())
+        }
+
+        @Test
+        fun `numberOfActiveNotes returns zero when all notes are archived`() {
+            // new notes are always set to active
+            emptyNoteService.addNote(note1)
+            emptyNoteService.addNote(note2)
+            emptyNoteService.addNote(note3)
+
+            // archive all notes
+            emptyNoteService.archiveNote(note1.id)
+            emptyNoteService.archiveNote(note2.id)
+            emptyNoteService.archiveNote(note3.id)
+
+            assertEquals(0, emptyNoteService.numberOfActiveNotes())
+        }
+
+        @Test
+        fun `numberOfNotesByCategory returns correct count for Work`() {
+            assertEquals(1, populatedNoteService.numberOfNotesByCategory("Work"))
+        }
+
+        @Test
+        fun `numberOfNotesByCategory returns zero when category does not exist`() {
+            assertEquals(0, populatedNoteService.numberOfNotesByCategory("Travel"))
+        }
+
+        @Test
+        fun `numberOfNotesByPriority returns correct count`() {
+            // Priority = 2 (note2 only)
+            assertEquals(1, populatedNoteService.numberOfNotesByPriority(2))
+        }
+
+        @Test
+        fun `numberOfNotesByPriority returns zero when priority does not exist`() {
+            assertEquals(0, populatedNoteService.numberOfNotesByPriority(99))
+        }
+    }
 }
+
