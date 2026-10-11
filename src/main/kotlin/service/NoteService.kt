@@ -26,10 +26,12 @@ class NoteService {
     fun updateNote(id: Int, updated: Note): Boolean {
         val index = notes.indexOfFirst { it.id == id }
         if (index != -1) {
+            updated.id = id
             notes[index] = updated
             return true
         }
         return false
     }
+
 
 }
