@@ -1,10 +1,13 @@
 package service
 
 import model.Note
+import persistence.Serializer
 
-class NoteService {
+class NoteService(serializerType: Serializer){
 
-    private val notes = ArrayList<Note>()
+    private var serializer: Serializer = serializerType
+
+    private var notes = ArrayList<Note>()
     private var lastId = 0
     private fun getId(): Int = lastId++
 
@@ -100,6 +103,7 @@ class NoteService {
 
     fun getActiveNotes(): List<Note> {
         val result = ArrayList<Note>()
+
         for (note in notes) {
             if (!note.isArchived) {
                 result.add(note)
@@ -109,13 +113,37 @@ class NoteService {
         return result
     }
 
+    fun getArchivedNotes(): List<Note> {
+        val result = ArrayList<Note>()
+
+        for (note in notes) {
+            if (note.isArchived) {
+                result.add(note)
+            }
+        }
+
+        return result
+    }
+
     fun getNotesByCategory(category: String): List<Note> {
         val result = ArrayList<Note>()
+
         for (note in notes) {
             if (note.category.equals(category, ignoreCase = true)) {
                 result.add(note)
             }
         }
+
         return result
+    }
+
+    fun load() {
+        val array = serializer.read(Array<Note>::class.java)
+        notes = array.toCollection(ArrayList())
+    }
+
+    //@Throws(Exception::class)
+    fun store() {
+        serializer.write(notes)
     }
 }

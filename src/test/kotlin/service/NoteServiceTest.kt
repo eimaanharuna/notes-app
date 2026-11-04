@@ -6,6 +6,8 @@ import model.Note
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
+import persistence.XMLSerializer
+import java.io.File
 
 class NoteServiceTest {
 
@@ -26,8 +28,8 @@ class NoteServiceTest {
         // For use in tests - not added to populated list in SetUp
         note5 = Note(0, "Test5", "Body5", 5, "Hobbies", true)
 
-        emptyNoteService = NoteService()
-        populatedNoteService = NoteService()
+        emptyNoteService = NoteService(XMLSerializer(File("notes.xml")))
+        populatedNoteService = NoteService(XMLSerializer(File("empty-notes.xml")))
 
         populatedNoteService.addNote(note1)
         populatedNoteService.addNote(note2)
@@ -103,6 +105,104 @@ class NoteServiceTest {
             val notes = populatedNoteService.getNotes()
             assertEquals(4, notes.size)
         }
+
+        @Test
+        fun `getActiveNotes returns only non archived notes`() {
+            populatedNoteService.archiveNote(note1.id)
+            populatedNoteService.archiveNote(note3.id)
+
+            val activeList = populatedNoteService.getActiveNotes()
+
+            assertEquals(2, activeList.size)
+            assertTrue(activeList.all { !it.isArchived })
+        }
+
+        @Test
+        fun `getActiveNotes returns empty list when no notes are stored`() {
+            val activeList = emptyNoteService.getActiveNotes()
+            assertTrue(activeList.isEmpty())
+        }
+
+        @Test
+        fun `getActiveNotes returns empty list when all notes are archived`() {
+            populatedNoteService.archiveNote(note1.id)
+            populatedNoteService.archiveNote(note2.id)
+            populatedNoteService.archiveNote(note3.id)
+            populatedNoteService.archiveNote(note4.id)
+
+            val activeList = populatedNoteService.getActiveNotes()
+
+            assertTrue(activeList.isEmpty())
+        }
+
+        @Test
+        fun `getActiveNotes returns all notes when none are archived`() {
+            val activeList = populatedNoteService.getActiveNotes()
+
+            assertEquals(4, activeList.size)
+            assertTrue(activeList.none { it.isArchived })
+        }
+
+        @Test
+        fun `getActiveNotes preserves correct count and content`() {
+            populatedNoteService.archiveNote(note2.id)
+
+            val activeList = populatedNoteService.getActiveNotes()
+
+            assertEquals(3, activeList.size)
+            assertTrue(activeList.all { !it.isArchived })
+
+            // Assert: correct notes are present
+            assertTrue(activeList.contains(note1))
+            assertTrue(activeList.contains(note3))
+            assertTrue(activeList.contains(note4))
+        }
+
+        @Test
+        fun `getNotesByCategory handles empty list`() {
+            val result = emptyNoteService.getNotesByCategory("Work")
+            assertTrue(result.isEmpty())
+        }
+
+        @Test
+        fun `getNotesByCategory returns all matching notes when all match`() {
+            emptyNoteService.addNote(Note(0, "A", "Body A", 1, "Work", false))
+            emptyNoteService.addNote(Note(0, "B", "Body B", 2, "Work", false))
+            emptyNoteService.addNote(Note(0, "C", "Body C", 3, "Work", false))
+
+            assertEquals(3, emptyNoteService.numberOfNotes())
+            val result = emptyNoteService.getNotesByCategory("Work")
+
+            assertEquals(3, result.size)
+            assertTrue(result.all { it.category == "Work" })
+        }
+
+        @Test
+        fun `getNotesByCategory returns no notes when the category is not in the list` () {
+            val result = populatedNoteService.getNotesByCategory("Invalid Category")
+            assertTrue(result.isEmpty())
+        }
+
+        @Test
+        fun `getNotesByCategory returns matching categories regardless of case` () {
+            val result = populatedNoteService.getNotesByCategory("home")
+            assertEquals(1, result.size)
+            assertTrue(result.all { it.category == "Home" })
+        }
+
+        @Test
+        fun `getNotesByCategory excludes notes whose categories do not match` () {
+            assertEquals(4, populatedNoteService.numberOfNotes())
+
+            val result = populatedNoteService.getNotesByCategory("Work")
+            assertEquals(1, result.size)
+
+            assertTrue(result.contains(note1))
+            assertFalse(result.contains(note2))
+            assertFalse(result.contains(note3))
+            assertFalse(result.contains(note4))
+        }
+
     }
 
     @Nested
@@ -279,100 +379,48 @@ class NoteServiceTest {
             assertEquals(0, populatedNoteService.numberOfNotesByPriority(99))
         }
     }
-    @Test
-    fun `getActiveNotes returns only non archived notes`() {
-        populatedNoteService.archiveNote(note1.id)
-        populatedNoteService.archiveNote(note3.id)
 
-        val activeList = populatedNoteService.getActiveNotes()
 
-        assertEquals(2, activeList.size)
-        assertTrue(activeList.all { !it.isArchived })
-    }
+    @Nested
+    inner class PersistenceTests {
 
-    @Test
-    fun `getActiveNotes returns empty list when no notes are stored`() {
-        val activeList = emptyNoteService.getActiveNotes()
-        assertTrue(activeList.isEmpty())
-    }
+        @Test
+        fun `saving and loading an empty collection in XML doesn't crash app`() {
+            // Saving an empty notes.XML file.
+            val storingNotes = NoteService(XMLSerializer(File("notes.xml")))
+            storingNotes.store()
 
-    @Test
-    fun `getActiveNotes returns empty list when all notes are archived`() {
-        populatedNoteService.archiveNote(note1.id)
-        populatedNoteService.archiveNote(note2.id)
-        populatedNoteService.archiveNote(note3.id)
-        populatedNoteService.archiveNote(note4.id)
+            //Loading the empty notes.xml file into a new object
+            val loadedNotes = NoteService(XMLSerializer(File("notes.xml")))
+            loadedNotes.load()
 
-        val activeList = populatedNoteService.getActiveNotes()
+            //Comparing the source of the notes (storingNotes) with the XML loaded notes (loadedNotes)
+            assertEquals(0, storingNotes.numberOfNotes())
+            assertEquals(0, loadedNotes.numberOfNotes())
+            assertEquals(storingNotes.numberOfNotes(), loadedNotes.numberOfNotes())
+        }
 
-        assertTrue(activeList.isEmpty())
-    }
+        @Test
+        fun `saving notes to XML and then loading them doesn't loose data`() {
+            // Storing 3 notes to the notes.XML file.
+            val storingNotes = NoteService(XMLSerializer(File("notes.xml")))
+            storingNotes.addNote(note1)
+            storingNotes.addNote(note2)
+            storingNotes.addNote(note3)
+            storingNotes.store()
 
-    @Test
-    fun `getActiveNotes returns all notes when none are archived`() {
-        val activeList = populatedNoteService.getActiveNotes()
+            //Loading notes.xml into a different collection
+            val loadedNotes = NoteService(XMLSerializer(File("notes.xml")))
+            loadedNotes.load()
 
-        assertEquals(4, activeList.size)
-        assertTrue(activeList.none { it.isArchived })
-    }
-
-    @Test
-    fun `getActiveNotes preserves correct count and content`() {
-        populatedNoteService.archiveNote(note2.id)
-
-        val activeList = populatedNoteService.getActiveNotes()
-
-        assertEquals(3, activeList.size)
-        assertTrue(activeList.all { !it.isArchived })
-
-        // Assert: correct notes are present
-        assertTrue(activeList.contains(note1))
-        assertTrue(activeList.contains(note3))
-        assertTrue(activeList.contains(note4))
-    }
-    @Test
-    fun `getNotesByCategory handles empty list`() {
-        val result = emptyNoteService.getNotesByCategory("Work")
-        assertTrue(result.isEmpty())
-    }
-
-    @Test
-    fun `getNotesByCategory returns all matching notes when all match`() {
-        emptyNoteService.addNote(Note(0, "A", "Body A", 1, "Work", false))
-        emptyNoteService.addNote(Note(0, "B", "Body B", 2, "Work", false))
-        emptyNoteService.addNote(Note(0, "C", "Body C", 3, "Work", false))
-
-        assertEquals(3, emptyNoteService.numberOfNotes())
-        val result = emptyNoteService.getNotesByCategory("Work")
-
-        assertEquals(3, result.size)
-        assertTrue(result.all { it.category == "Work" })
-    }
-
-    @Test
-    fun `getNotesByCategory returns no notes when the category is not in the list` () {
-        val result = populatedNoteService.getNotesByCategory("Invalid Category")
-        assertTrue(result.isEmpty())
-    }
-
-    @Test
-    fun `getNotesByCategory returns matching categories regardless of case` () {
-        val result = populatedNoteService.getNotesByCategory("home")
-        assertEquals(1, result.size)
-        assertTrue(result.all { it.category == "Home" })
-    }
-
-    @Test
-    fun `getNotesByCategory excludes notes whose categories do not match` () {
-        assertEquals(4, populatedNoteService.numberOfNotes())
-
-        val result = populatedNoteService.getNotesByCategory("Work")
-        assertEquals(1, result.size)
-
-        assertTrue(result.contains(note1))
-        assertFalse(result.contains(note2))
-        assertFalse(result.contains(note3))
-        assertFalse(result.contains(note4))
+            //Comparing the source of the notes (storingNotes) with the XML loaded notes (loadedNotes)
+            assertEquals(3, storingNotes.numberOfNotes())
+            assertEquals(3, loadedNotes.numberOfNotes())
+            assertEquals(storingNotes.numberOfNotes(), loadedNotes.numberOfNotes())
+            assertEquals(storingNotes.findNoteById(0), loadedNotes.findNoteById(0))
+            assertEquals(storingNotes.findNoteById(1), loadedNotes.findNoteById(1))
+            assertEquals(storingNotes.findNoteById(2), loadedNotes.findNoteById(2))
+        }
     }
 
 }
