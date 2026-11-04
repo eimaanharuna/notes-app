@@ -108,4 +108,14 @@ class NoteService {
 
         return result
     }
+
+    fun getNotesByCategory(category: String): List<Note> {
+        val result = ArrayList<Note>()
+        for (note in notes) {
+            if (note.category.equals(category, ignoreCase = true)) {
+                result.add(note)
+            }
+        }
+        return result
+    }
 }
