@@ -53,89 +53,29 @@ class NoteService(serializerType: Serializer){
         return notes.size
     }
 
-    fun numberOfArchivedNotes(): Int {
-        var count = 0
+    fun numberOfArchivedNotes()
+            = notes.count { note: Note -> note.isArchived }
 
-        for (note in notes) {
-            if (note.isArchived) {
-                count++
-            }
-        }
+    fun numberOfActiveNotes()
+            = notes.count { note: Note -> !note.isArchived }
 
-        return count
-    }
+    fun numberOfNotesByCategory(category: String)
+            = notes.count { note: Note -> note.category == category }
 
-    fun numberOfActiveNotes(): Int {
-        var count = 0
+    fun numberOfNotesByPriority(priority: Int)
+            = notes.count { note: Note -> note.priority == priority }
 
-        for (note in notes) {
-            if (!note.isArchived) {
-                count++
-            }
-        }
+    fun getActiveNotes() = notes.filter { note -> !note.isArchived }
 
-        return count
-    }
+    fun getArchivedNotes() = notes.filter { note -> note.isArchived }
 
-    fun numberOfNotesByCategory(category: String): Int {
-        var count = 0
+    fun getNotesByCategory(category: String) = notes
+        .filter { note -> note.category.equals(category, ignoreCase = true) }
 
-        for (note in notes) {
-            if (note.category == category) {
-                count++
-            }
-        }
 
-        return count
-    }
-
-    fun numberOfNotesByPriority(priority: Int): Int {
-        var count = 0
-
-        for (note in notes) {
-            if (note.priority == priority) {
-                count++
-            }
-        }
-
-        return count
-    }
-
-    fun getActiveNotes(): List<Note> {
-        val result = ArrayList<Note>()
-
-        for (note in notes) {
-            if (!note.isArchived) {
-                result.add(note)
-            }
-        }
-
-        return result
-    }
-
-    fun getArchivedNotes(): List<Note> {
-        val result = ArrayList<Note>()
-
-        for (note in notes) {
-            if (note.isArchived) {
-                result.add(note)
-            }
-        }
-
-        return result
-    }
-
-    fun getNotesByCategory(category: String): List<Note> {
-        val result = ArrayList<Note>()
-
-        for (note in notes) {
-            if (note.category.equals(category, ignoreCase = true)) {
-                result.add(note)
-            }
-        }
-
-        return result
-    }
+    fun searchNotesByContent(content: String) = notes
+        .filter { note -> ((note.title.contains(content, ignoreCase = true)
+                || (note.body.contains(content, ignoreCase = true))))}
 
     fun load() {
         val array = serializer.read(Array<Note>::class.java)

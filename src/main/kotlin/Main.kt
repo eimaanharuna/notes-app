@@ -1,147 +1,66 @@
-import io.github.oshai.kotlinlogging.KotlinLogging
-import model.Note
-import persistence.JSONSerializer
-import persistence.XMLSerializer
-import service.NoteService
-import utils.readNextBoolean
-import utils.readNextInt
-import utils.readNextLine
-import java.io.File
+package utils
 
-//val noteService = NoteService(XMLSerializer(File("notes.xml")))
-val noteService = NoteService(JSONSerializer(File("notes.json")))
+fun readNextInt(prompt: String = ""): Int {
+    while (true) {
+        print(prompt)
 
-private val logger = KotlinLogging.logger {}
-
-fun main(){
-    logger.info { "Notes App Starting" }
-    runMenu()
-}
-
-fun runMenu (){
-    var input : Int
-    do {
-        input = mainMenu()
-        when(input) {
-            1 -> addNote()
-            2 -> listNotes()
-            3 -> updateNote()
-            4 -> deleteNote()
-            5 -> archiveNote()
-            20 -> save()
-            21 -> load()
-            0 -> logger.info { "Notes App Exiting" }
-            else -> println("Invalid Option")
+        val value = readln().trim().toIntOrNull()
+        if (value != null) {
+            return value
         }
-    } while (input != 0)
+
+        println("Please enter a valid integer.")
+    }
 }
 
-fun mainMenu(): Int {
-    print(""" 
-         > ----------------------------------
-         > |        NOTE KEEPER APP         |
-         > ----------------------------------
-         > | NOTE MENU                      |
-         > |   1) Add a note                |
-         > |   2) List all notes            |
-         > |   3) Update a note             |
-         > |   4) Delete a note             |
-         > |   5) Archive a note            |
-         > ----------------------------------
-         > |   20) Save notes               |
-         > |   21) Load notes               |
-         > ----------------------------------
-         > |   0) Exit                      |
-         > ----------------------------------
-         > """.trimMargin(">"))
-    return readNextInt("==>> ")
-}
+fun readNextDouble(prompt: String = ""): Double {
+    while (true) {
+        print(prompt)
 
-fun addNote(){
-    val title = readNextLine("Title: ")
-    val body = readNextLine("Body: ")
-    val priority = readNextInt("Priority (1-5): ")
-    val category = readNextLine("Category: ")
-
-    noteService.addNote(
-        Note(0, title, body, priority, category, false)
-    )
-
-    println("Note added")
-}
-
-fun listNotes() {
-    if (noteService.numberOfNotes() > 0){
-        val option = readNextInt(
-            """
-                  > --------------------------------
-                  > |   1) View ALL notes          |
-                  > |   2) View ACTIVE notes       |
-                  > |   3) View ARCHIVED notes     |
-                  > --------------------------------
-         > ==>> """.trimMargin(">")
-        )
-
-        when (option) {
-            1 -> noteService.getNotes().forEach {println(it)}
-            2 -> noteService.getActiveNotes().forEach {println(it)}
-            3 -> noteService.getArchivedNotes().forEach {println(it)}
-            else -> println("Invalid option entered: $option")
+        val value = readln().trim().toDoubleOrNull()
+        if (value != null) {
+            return value
         }
-    } else {
-        println("Option Invalid - No notes stored")
-    }
 
-}
-
-fun updateNote() {
-    val id = readNextInt("Enter ID: ")
-    val title = readNextLine("Title: ")
-    val body = readNextLine("Body: ")
-    val priority = readNextInt("Priority (1-5): ")
-    val category = readNextLine("Category: ")
-    val isArchived = readNextBoolean("Archive the note (y/n): ")
-
-    val updated = Note(id, title, body, priority, category, isArchived)
-
-    if (noteService.updateNote(id, updated)) {
-        println("Updated")
-    } else {
-        println("Not found")
+        println("Please enter a valid double.")
     }
 }
 
-fun deleteNote() {
-    val id = readNextInt("Enter ID: ")
+fun readNextFloat(prompt: String = ""): Float {
+    while (true) {
+        print(prompt)
 
-    if (noteService.deleteNote(id)) {
-        println("Deleted")
-    } else {
-        println("Not found")
+        val value = readln().trim().toFloatOrNull()
+        if (value != null) {
+            return value
+        }
+
+        println("Please enter a valid float.")
     }
 }
 
-fun archiveNote(){
-    noteService.getActiveNotes().forEach { println(it) }
-    val id = readNextInt("Enter ID of Note to be Archived: ")
-    if (noteService.archiveNote(id))
-        println("Archived")
-    else
-        println("Not found")
+fun readNextLine(prompt: String = ""): String {
+    print(prompt)
+    return readln()
 }
 
-fun save() {
-    try {
-        noteService.store()
-    } catch (e: Exception) {
-        System.err.println("Error writing to file: $e")
+fun readNextChar(prompt: String = ""): Char {
+    while (true) {
+        print(prompt)
+        val input = readln().trim()
+
+        if (input.length == 1) {
+            return input[0]
+        }
+
+        println("Please enter exactly one character.")
     }
 }
 
-fun load() {
-    try {
-        noteService.load()
-    } catch (e: Exception) {
-        System.err.println("Error reading from file: $e")
+fun readNextBoolean(prompt: String = ""): Boolean {
+    print(prompt)
+    return when (readlnOrNull()?.lowercase()) {
+        "y", "yes", "true" -> true
+        else -> false
     }
 }
